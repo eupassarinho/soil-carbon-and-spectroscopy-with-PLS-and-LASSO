@@ -68,15 +68,15 @@ set.seed(256)
 ProfileF <- sample(1:(MIR$Amostra %>% unique() %>% length()), 
                    round(0.8*(MIR$Amostra %>% unique() %>% length()), 0))
 
-MIR_LLO_training <- MIR %>% dplyr::filter(Perfil %in% ProfileF)
-#MIR_LLO_testing <- MIR %>% dplyr::filter(!Perfil %in% ProfileF)
+MIR_LSPO_training <- MIR %>% dplyr::filter(Perfil %in% ProfileF)
+#MIR_LSPO_testing <- MIR %>% dplyr::filter(!Perfil %in% ProfileF)
 
 set.seed(365)
 ProfileF <- sample(1:(MIR$Amostra %>% unique() %>% length()), 
                    round(0.8*(MIR$Amostra %>% unique() %>% length()), 0))
 
-VNIR_LLO_training <- VNIR_SWIR %>% dplyr::filter(Perfil %in% ProfileF)
-#VNIR_LLO_testing <- VNIR_SWIR %>% dplyr::filter(!Perfil %in% ProfileF)
+VNIR_LSPO_training <- VNIR_SWIR %>% dplyr::filter(Perfil %in% ProfileF)
+#VNIR_LSPO_testing <- VNIR_SWIR %>% dplyr::filter(!Perfil %in% ProfileF)
 
 # Getting a vector of true random numbers ---------------------------------
 # We are using the package "random" to get true random numbers,
@@ -101,164 +101,164 @@ seeds <- c(5975, 99313, 33793, 55501, 40294, 92680, 62083, 81352, 25090,
            72494, 85776, 80748, 60487, 8734, 17397, 76482, 88638, 92082,
            90560, 40158, 41207, 86727, 90484, 27324, 83288, 66581, 65811, 54017)
 
-# Training with LLO-CV ----------------------------------------------------
+# Training with LSPO-CV ----------------------------------------------------
 
 ti <- Sys.time()
-# Calibrating MIR based models using PLS method and LLO cross-validation
-pls_MIR_LLO_cross_validation <- list()
-pls_MIR_LLO_best_models <- list()
+# Calibrating MIR based models using PLS method and LSPO cross-validation
+pls_MIR_LSPO_cross_validation <- list()
+pls_MIR_LSPO_best_models <- list()
 
 for (i in 1:100) {
   ## Setting randomization seed
   set.seed(seeds[i])
   
   ## Preparing for Space Folds
-  MIR_LLO_obj <- CreateSpacetimeFolds(
-    MIR_LLO_training,
+  MIR_LSPO_obj <- CreateSpacetimeFolds(
+    MIR_LSPO_training,
     spacevar = "Amostra", class = "Amostra",
     k = 10)
   
-  MIR_LLO_trCtrl <- trainControl(
+  MIR_LSPO_trCtrl <- trainControl(
     method = "cv",
     savePredictions = TRUE,
-    index = MIR_LLO_obj$index,
-    indexOut = MIR_LLO_obj$indexOut
+    index = MIR_LSPO_obj$index,
+    indexOut = MIR_LSPO_obj$indexOut
   )
   
   ## Training model
-  MIR_PLS_LLO <- train(
+  MIR_PLS_LSPO <- train(
     `C (g kg)` ~ .,
-    data = MIR_LLO_training %>%
-      select(c(14, 18:(ncol(MIR_LLO_training)-1))),
+    data = MIR_LSPO_training %>%
+      select(c(14, 18:(ncol(MIR_LSPO_training)-1))),
     method = "pls",
     preProc = c("zv", "center", "scale"),
-    trControl = MIR_LLO_trCtrl,
+    trControl = MIR_LSPO_trCtrl,
     metric = "RMSE",
     maximize = F,
     tuneLength = 10
   )
   
-  rm(MIR_LLO_obj, MIR_LLO_trCtrl)
+  rm(MIR_LSPO_obj, MIR_LSPO_trCtrl)
   
   ## Saving tuned models
-  save(MIR_PLS_LLO,
-       file = paste("./02_tuned_models/pls_MIR_LLO_tuned_model_",
+  save(MIR_PLS_LSPO,
+       file = paste("./02_tuned_models/pls_MIR_LSPO_tuned_model_",
                     i,".RData", sep = ""))
   
   ## Getting cross-validation metrics
-  cv <- MIR_PLS_LLO[["resample"]] %>% mutate(model = i)
-  pls_MIR_LLO_cross_validation[[i]] <- cv
+  cv <- MIR_PLS_LSPO[["resample"]] %>% mutate(model = i)
+  pls_MIR_LSPO_cross_validation[[i]] <- cv
   
   # Getting best models stats
-  bestIter <- MIR_PLS_LLO[["finalModel"]][["bestIter"]][1,1]
-  result <- MIR_PLS_LLO[["results"]] %>% filter(ncomp == bestIter)
-  pls_MIR_LLO_best_models[[i]] <- result %>% mutate(model = i)
+  bestIter <- MIR_PLS_LSPO[["finalModel"]][["bestIter"]][1,1]
+  result <- MIR_PLS_LSPO[["results"]] %>% filter(ncomp == bestIter)
+  pls_MIR_LSPO_best_models[[i]] <- result %>% mutate(model = i)
   
   ## Cleaning up memory space
-  rm(MIR_PLS_LLO, cv, bestIter, result)
+  rm(MIR_PLS_LSPO, cv, bestIter, result)
   gc()
   
 }
 
 ## Binding models results
-pls_MIR_LLO_cross_validation <- bind_rows(pls_MIR_LLO_cross_validation)
-pls_MIR_LLO_best_models <- bind_rows(pls_MIR_LLO_best_models)
+pls_MIR_LSPO_cross_validation <- bind_rows(pls_MIR_LSPO_cross_validation)
+pls_MIR_LSPO_best_models <- bind_rows(pls_MIR_LSPO_best_models)
 
 ## Writting in disc models results
-save(pls_MIR_LLO_cross_validation ,
-     file = "./03_crossValidation/pls_MIR_LLO_cross_validation.RData")
-save(pls_MIR_LLO_best_models,
-     file = "./03_crossValidation/pls_MIR_LLO_best_models.RData")
-write_xlsx(pls_MIR_LLO_cross_validation,
-           "./03_crossValidation/pls_MIR_LLO_cross_validation.xlsx",
+save(pls_MIR_LSPO_cross_validation ,
+     file = "./03_crossValidation/pls_MIR_LSPO_cross_validation.RData")
+save(pls_MIR_LSPO_best_models,
+     file = "./03_crossValidation/pls_MIR_LSPO_best_models.RData")
+write_xlsx(pls_MIR_LSPO_cross_validation,
+           "./03_crossValidation/pls_MIR_LSPO_cross_validation.xlsx",
            col_names = TRUE)
-write_xlsx(pls_MIR_LLO_best_models,
-           "./03_crossValidation/pls_MIR_LLO_best_models.xlsx",
+write_xlsx(pls_MIR_LSPO_best_models,
+           "./03_crossValidation/pls_MIR_LSPO_best_models.xlsx",
            col_names = TRUE)
 
-remove(pls_MIR_LLO_cross_validation, pls_MIR_LLO_best_models)
+remove(pls_MIR_LSPO_cross_validation, pls_MIR_LSPO_best_models)
 
-# Calibrating VNIR based models using PLS method and LLO cross-validation
-pls_VNIR_LLO_cross_validation <- list()
-pls_VNIR_LLO_best_models <- list()
+# Calibrating VNIR based models using PLS method and LSPO cross-validation
+pls_VNIR_LSPO_cross_validation <- list()
+pls_VNIR_LSPO_best_models <- list()
 
 for (i in 1:100) {
   ## Setting randomization seed
   set.seed(seeds[i])
   
   ## Preparing for Space Folds
-  VNIR_LLO_obj <- CreateSpacetimeFolds(
-    VNIR_LLO_training,
+  VNIR_LSPO_obj <- CreateSpacetimeFolds(
+    VNIR_LSPO_training,
     spacevar = "Amostra", class = "Amostra",
     k = 10)
   
-  VNIR_LLO_trCtrl <- trainControl(
+  VNIR_LSPO_trCtrl <- trainControl(
     method = "cv",
     savePredictions = TRUE,
-    index = VNIR_LLO_obj$index,
-    indexOut = VNIR_LLO_obj$indexOut
+    index = VNIR_LSPO_obj$index,
+    indexOut = VNIR_LSPO_obj$indexOut
   )
   
   ## Training model
-  VNIR_PLS_LLO <- train(
+  VNIR_PLS_LSPO <- train(
     `C (g kg)` ~ .,
-    data = VNIR_LLO_training %>%
-      select(c(14, 18:(ncol(VNIR_LLO_training)-1))),
+    data = VNIR_LSPO_training %>%
+      select(c(14, 18:(ncol(VNIR_LSPO_training)-1))),
     method = "pls",
     preProc = c("zv", "center", "scale"),
-    trControl = VNIR_LLO_trCtrl,
+    trControl = VNIR_LSPO_trCtrl,
     metric = "RMSE",
     maximize = F,
     tuneLength = 10
   )
   
-  rm(VNIR_LLO_obj, VNIR_LLO_trCtrl)
+  rm(VNIR_LSPO_obj, VNIR_LSPO_trCtrl)
   
   ## Saving tuned models
-  save(VNIR_PLS_LLO,
-       file = paste("./02_tuned_models/pls_VNIR_LLO_tuned_model_",
+  save(VNIR_PLS_LSPO,
+       file = paste("./02_tuned_models/pls_VNIR_LSPO_tuned_model_",
                     i,".RData", sep = ""))
   
   ## Getting cross-validation metrics
-  cv <- VNIR_PLS_LLO[["resample"]] %>% mutate(model = i)
-  pls_VNIR_LLO_cross_validation[[i]] <- cv
+  cv <- VNIR_PLS_LSPO[["resample"]] %>% mutate(model = i)
+  pls_VNIR_LSPO_cross_validation[[i]] <- cv
   
   # Getting best models stats
-  bestIter <- VNIR_PLS_LLO[["finalModel"]][["bestIter"]][1,1]
-  result <- VNIR_PLS_LLO[["results"]] %>% filter(ncomp == bestIter)
-  pls_VNIR_LLO_best_models[[i]] <- result %>% mutate(model = i)
+  bestIter <- VNIR_PLS_LSPO[["finalModel"]][["bestIter"]][1,1]
+  result <- VNIR_PLS_LSPO[["results"]] %>% filter(ncomp == bestIter)
+  pls_VNIR_LSPO_best_models[[i]] <- result %>% mutate(model = i)
   
   ## Cleaning up memory space
-  rm(VNIR_PLS_LLO, cv, bestIter, result)
+  rm(VNIR_PLS_LSPO, cv, bestIter, result)
   gc()
   
 }
 
 ## Binding models results
-pls_VNIR_LLO_cross_validation <- bind_rows(pls_VNIR_LLO_cross_validation)
-pls_VNIR_LLO_best_models <- bind_rows(pls_VNIR_LLO_best_models)
+pls_VNIR_LSPO_cross_validation <- bind_rows(pls_VNIR_LSPO_cross_validation)
+pls_VNIR_LSPO_best_models <- bind_rows(pls_VNIR_LSPO_best_models)
 
 ## Writting in disc models results
-save(pls_VNIR_LLO_cross_validation ,
-     file = "./03_crossValidation/pls_VNIR_LLO_cross_validation.RData")
-save(pls_VNIR_LLO_best_models,
-     file = "./03_crossValidation/pls_VNIR_LLO_best_models.RData")
-write_xlsx(pls_VNIR_LLO_cross_validation,
-           "./03_crossValidation/pls_VNIR_LLO_cross_validation.xlsx",
+save(pls_VNIR_LSPO_cross_validation ,
+     file = "./03_crossValidation/pls_VNIR_LSPO_cross_validation.RData")
+save(pls_VNIR_LSPO_best_models,
+     file = "./03_crossValidation/pls_VNIR_LSPO_best_models.RData")
+write_xlsx(pls_VNIR_LSPO_cross_validation,
+           "./03_crossValidation/pls_VNIR_LSPO_cross_validation.xlsx",
            col_names = TRUE)
-write_xlsx(pls_VNIR_LLO_best_models,
-           "./03_crossValidation/pls_VNIR_LLO_best_models.xlsx",
+write_xlsx(pls_VNIR_LSPO_best_models,
+           "./03_crossValidation/pls_VNIR_LSPO_best_models.xlsx",
            col_names = TRUE)
 
-remove(pls_VNIR_LLO_cross_validation, pls_VNIR_LLO_best_models)
+remove(pls_VNIR_LSPO_cross_validation, pls_VNIR_LSPO_best_models)
 
 tf <- Sys.time()
 
-write.table(paste0("Tempo requerido pelo PLS com LLO CV","\n",
+write.table(paste0("Tempo requerido pelo PLS com LSPO CV","\n",
                    "Tempo inicial = ", ti, "\n",
                    "Tempo final = ", tf, "\n",
                    "Diferença de tempo = ", (tf-ti)),
-            file = "training_time_PLS_LLO.txt")
+            file = "training_time_PLS_LSPO.txt")
 
 # Training with k-Fold CV -------------------------------------------------
 controlObject <- trainControl(method = "repeatedcv", number = 10,
@@ -276,8 +276,8 @@ for (i in 1:100) {
   ## Training model
   MIR_PLS_kFold <- train(
     `C (g kg)` ~ .,
-    data = MIR_LLO_training %>%
-      select(c(14, 18:(ncol(MIR_LLO_training)-1))),
+    data = MIR_LSPO_training %>%
+      select(c(14, 18:(ncol(MIR_LSPO_training)-1))),
     method = "pls",
     preProc = c("zv", "center", "scale"),
     trControl = controlObject,
@@ -335,8 +335,8 @@ for (i in 3:100) {
   ## Training model
   VNIR_PLS_kFold <- train(
     `C (g kg)` ~ .,
-    data = VNIR_LLO_training %>%
-      select(c(14, 18:(ncol(VNIR_LLO_training)-1))),
+    data = VNIR_LSPO_training %>%
+      select(c(14, 18:(ncol(VNIR_LSPO_training)-1))),
     method = "pls",
     preProc = c("zv", "center", "scale"),
     trControl = controlObject,

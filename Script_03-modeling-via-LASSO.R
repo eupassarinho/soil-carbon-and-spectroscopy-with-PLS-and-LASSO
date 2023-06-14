@@ -66,28 +66,28 @@ set.seed(256)
 ProfileF <- sample(1:(MIR$Amostra %>% unique() %>% length()), 
                    round(0.8*(MIR$Amostra %>% unique() %>% length()), 0))
 
-MIR_LLO_training <- MIR %>% dplyr::filter(Perfil %in% ProfileF)
-#MIR_LLO_testing <- MIR %>% dplyr::filter(!Perfil %in% ProfileF)
+MIR_LSPO_training <- MIR %>% dplyr::filter(Perfil %in% ProfileF)
+#MIR_LSPO_testing <- MIR %>% dplyr::filter(!Perfil %in% ProfileF)
 
 set.seed(365)
 ProfileF <- sample(1:(MIR$Amostra %>% unique() %>% length()), 
                    round(0.8*(MIR$Amostra %>% unique() %>% length()), 0))
 
-VNIR_LLO_training <- VNIR_SWIR %>% dplyr::filter(Perfil %in% ProfileF)
-#VNIR_LLO_testing <- VNIR_SWIR %>% dplyr::filter(!Perfil %in% ProfileF)
+VNIR_LSPO_training <- VNIR_SWIR %>% dplyr::filter(Perfil %in% ProfileF)
+#VNIR_LSPO_testing <- VNIR_SWIR %>% dplyr::filter(!Perfil %in% ProfileF)
 
 # Casting data frames to arrays, required by LASSO method -----------------
 ## First for MIR datasets
-X_MIR_LLO_training <- model.matrix(
+X_MIR_LSPO_training <- model.matrix(
   `C (g kg)` ~.,
-  MIR_LLO_training %>% select(c(10, 14, 18:(ncol(MIR_LLO_training)-1))))[,-1]
-Y_MIR_LLO_training <- MIR_LLO_training$`C (g kg)`
+  MIR_LSPO_training %>% select(c(10, 14, 18:(ncol(MIR_LSPO_training)-1))))[,-1]
+Y_MIR_LSPO_training <- MIR_LSPO_training$`C (g kg)`
   
 ## After for VNIR datasets
-X_VNIR_LLO_training <- model.matrix(
+X_VNIR_LSPO_training <- model.matrix(
   `C (g kg)` ~.,
-  VNIR_LLO_training %>% select(c(3:4, 10, 14, 18:(ncol(VNIR_LLO_training)-1))))[,-1]
-Y_VNIR_LLO_training <- VNIR_LLO_training$`C (g kg)`
+  VNIR_LSPO_training %>% select(c(3:4, 10, 14, 18:(ncol(VNIR_LSPO_training)-1))))[,-1]
+Y_VNIR_LSPO_training <- VNIR_LSPO_training$`C (g kg)`
 
 rm(MIR, VNIR_SWIR)
 
@@ -114,36 +114,36 @@ seeds <- c(5975, 99313, 33793, 55501, 40294, 92680, 62083, 81352, 25090,
            72494, 85776, 80748, 60487, 8734, 17397, 76482, 88638, 92082,
            90560, 40158, 41207, 86727, 90484, 27324, 83288, 66581, 65811, 54017)
 
-# Training with LLO-CV ----------------------------------------------------
+# Training with LSPO-CV ----------------------------------------------------
 ti <- Sys.time()
-# Calibrating MIR based models using LASSO method and LLO cross-validation
-lasso_MIR_LLO_cross_validation <- list()
-lasso_MIR_LLO_best_models <- list()
+# Calibrating MIR based models using LASSO method and LSPO cross-validation
+lasso_MIR_LSPO_cross_validation <- list()
+lasso_MIR_LSPO_best_models <- list()
 
 for (i in 1:100) {
   ## Setting randomization seed
   set.seed(seeds[i])
   
   ## Preparing for Space Folds
-  MIR_LLO_obj <- CreateSpacetimeFolds(
-    MIR_LLO_training,
+  MIR_LSPO_obj <- CreateSpacetimeFolds(
+    MIR_LSPO_training,
     spacevar = "Amostra", class = "Amostra",
     k = 10)
   
-  MIR_LLO_trCtrl <- trainControl(
+  MIR_LSPO_trCtrl <- trainControl(
     method = "cv",
     savePredictions = TRUE,
-    index = MIR_LLO_obj$index,
-    indexOut = MIR_LLO_obj$indexOut
+    index = MIR_LSPO_obj$index,
+    indexOut = MIR_LSPO_obj$indexOut
   )
   
   ## Training model
-  MIR_LASSO_LLO <- train(
-    x = X_MIR_LLO_training,
-    y = Y_MIR_LLO_training,
+  MIR_LASSO_LSPO <- train(
+    x = X_MIR_LSPO_training,
+    y = Y_MIR_LSPO_training,
     method = "glmnet",
     preProc = c("zv", "center", "scale"),
-    trControl = MIR_LLO_trCtrl,
+    trControl = MIR_LSPO_trCtrl,
     metric = "RMSE",
     maximize = F,
     tuneGrid = expand.grid(alpha = 1,
@@ -151,72 +151,72 @@ for (i in 1:100) {
   )
   
   ## Saving tuned models
-  save(MIR_LASSO_LLO,
-       file = paste("./02_tuned_models/lasso_MIR_LLO_tuned_model_",
+  save(MIR_LASSO_LSPO,
+       file = paste("./02_tuned_models/lasso_MIR_LSPO_tuned_model_",
                     i,".RData", sep = ""))
   
   ## Getting cross-validation metrics
-  cv <- MIR_LASSO_LLO[["resample"]] %>% mutate(model = i)
-  lasso_MIR_LLO_cross_validation[[i]] <- cv
+  cv <- MIR_LASSO_LSPO[["resample"]] %>% mutate(model = i)
+  lasso_MIR_LSPO_cross_validation[[i]] <- cv
   
   # Getting best models stats
-  alphaLambda <- MIR_LASSO_LLO[["finalModel"]][["tuneValue"]]
-  result <- MIR_LASSO_LLO[["results"]] %>%
+  alphaLambda <- MIR_LASSO_LSPO[["finalModel"]][["tuneValue"]]
+  result <- MIR_LASSO_LSPO[["results"]] %>%
     filter(lambda == alphaLambda[1,2])
-  lasso_MIR_LLO_best_models[[i]] <- result %>% mutate(model = i)
+  lasso_MIR_LSPO_best_models[[i]] <- result %>% mutate(model = i)
   
   ## Cleaning up memory space
-  rm(MIR_LLO_obj, MIR_LLO_trCtrl, MIR_LASSO_LLO, cv, alphaLambda, result)
+  rm(MIR_LSPO_obj, MIR_LSPO_trCtrl, MIR_LASSO_LSPO, cv, alphaLambda, result)
   gc()
   
 }
 
 ## Binding models results
-lasso_MIR_LLO_cross_validation <- bind_rows(lasso_MIR_LLO_cross_validation)
-lasso_MIR_LLO_best_models <- bind_rows(lasso_MIR_LLO_best_models)
+lasso_MIR_LSPO_cross_validation <- bind_rows(lasso_MIR_LSPO_cross_validation)
+lasso_MIR_LSPO_best_models <- bind_rows(lasso_MIR_LSPO_best_models)
 
 ## Writting in disc models results
-save(lasso_MIR_LLO_cross_validation ,
-     file = "./03_crossValidation/lasso_MIR_LLO_cross_validation.RData")
-save(lasso_MIR_LLO_best_models,
-     file = "./03_crossValidation/lasso_MIR_LLO_best_models.RData")
-write_xlsx(lasso_MIR_LLO_cross_validation,
-           "./03_crossValidation/lasso_MIR_LLO_cross_validation.xlsx",
+save(lasso_MIR_LSPO_cross_validation ,
+     file = "./03_crossValidation/lasso_MIR_LSPO_cross_validation.RData")
+save(lasso_MIR_LSPO_best_models,
+     file = "./03_crossValidation/lasso_MIR_LSPO_best_models.RData")
+write_xlsx(lasso_MIR_LSPO_cross_validation,
+           "./03_crossValidation/lasso_MIR_LSPO_cross_validation.xlsx",
            col_names = TRUE)
-write_xlsx(lasso_MIR_LLO_best_models,
-           "./03_crossValidation/lasso_MIR_LLO_best_models.xlsx",
+write_xlsx(lasso_MIR_LSPO_best_models,
+           "./03_crossValidation/lasso_MIR_LSPO_best_models.xlsx",
            col_names = TRUE)
 
-remove(lasso_MIR_LLO_cross_validation, lasso_MIR_LLO_best_models)
+remove(lasso_MIR_LSPO_cross_validation, lasso_MIR_LSPO_best_models)
 
-# Calibrating VNIR based models using LASSO method and LLO cross-validation
-lasso_VNIR_LLO_cross_validation <- list()
-lasso_VNIR_LLO_best_models <- list()
+# Calibrating VNIR based models using LASSO method and LSPO cross-validation
+lasso_VNIR_LSPO_cross_validation <- list()
+lasso_VNIR_LSPO_best_models <- list()
 
 for (i in 1:100) {
   ## Setting randomization seed
   set.seed(seeds[i])
   
   ## Preparing for Space Folds
-  VNIR_LLO_obj <- CreateSpacetimeFolds(
-    VNIR_LLO_training,
+  VNIR_LSPO_obj <- CreateSpacetimeFolds(
+    VNIR_LSPO_training,
     spacevar = "Amostra", class = "Amostra",
     k = 10)
   
-  VNIR_LLO_trCtrl <- trainControl(
+  VNIR_LSPO_trCtrl <- trainControl(
     method = "cv",
     savePredictions = TRUE,
-    index = VNIR_LLO_obj$index,
-    indexOut = VNIR_LLO_obj$indexOut
+    index = VNIR_LSPO_obj$index,
+    indexOut = VNIR_LSPO_obj$indexOut
   )
   
   ## Training model
-  VNIR_LASSO_LLO <- train(
-    x = X_VNIR_LLO_training,
-    y = Y_VNIR_LLO_training,
+  VNIR_LASSO_LSPO <- train(
+    x = X_VNIR_LSPO_training,
+    y = Y_VNIR_LSPO_training,
     method = "glmnet",
     preProc = c("zv", "center", "scale"),
-    trControl = VNIR_LLO_trCtrl,
+    trControl = VNIR_LSPO_trCtrl,
     metric = "RMSE",
     maximize = F,
     tuneGrid = expand.grid(alpha = 1,
@@ -224,51 +224,51 @@ for (i in 1:100) {
   )
   
   ## Saving tuned models
-  save(VNIR_LASSO_LLO,
-       file = paste("./02_tuned_models/lasso_VNIR_LLO_tuned_model_",
+  save(VNIR_LASSO_LSPO,
+       file = paste("./02_tuned_models/lasso_VNIR_LSPO_tuned_model_",
                     i,".RData", sep = ""))
   
   ## Getting cross-validation metrics
-  cv <- VNIR_LASSO_LLO[["resample"]] %>% mutate(model = i)
-  lasso_VNIR_LLO_cross_validation[[i]] <- cv
+  cv <- VNIR_LASSO_LSPO[["resample"]] %>% mutate(model = i)
+  lasso_VNIR_LSPO_cross_validation[[i]] <- cv
   
   # Getting best models stats
-  alphaLambda <- VNIR_LASSO_LLO[["finalModel"]][["tuneValue"]]
-  result <- VNIR_LASSO_LLO[["results"]] %>%
+  alphaLambda <- VNIR_LASSO_LSPO[["finalModel"]][["tuneValue"]]
+  result <- VNIR_LASSO_LSPO[["results"]] %>%
     filter(lambda == alphaLambda[1,2])
-  lasso_VNIR_LLO_best_models[[i]] <- result %>% mutate(model = i)
+  lasso_VNIR_LSPO_best_models[[i]] <- result %>% mutate(model = i)
   
   ## Cleaning up memory space
-  rm(VNIR_LLO_obj, VNIR_LLO_trCtrl, VNIR_LASSO_LLO, cv, alphaLambda, result)
+  rm(VNIR_LSPO_obj, VNIR_LSPO_trCtrl, VNIR_LASSO_LSPO, cv, alphaLambda, result)
   gc()
   
 }
 
 ## Binding models results
-lasso_VNIR_LLO_cross_validation <- bind_rows(lasso_VNIR_LLO_cross_validation)
-lasso_VNIR_LLO_best_models <- bind_rows(lasso_VNIR_LLO_best_models)
+lasso_VNIR_LSPO_cross_validation <- bind_rows(lasso_VNIR_LSPO_cross_validation)
+lasso_VNIR_LSPO_best_models <- bind_rows(lasso_VNIR_LSPO_best_models)
 
 ## Writting in disc models results
-save(lasso_VNIR_LLO_cross_validation ,
-     file = "./03_crossValidation/lasso_VNIR_LLO_cross_validation.RData")
-save(lasso_VNIR_LLO_best_models,
-     file = "./03_crossValidation/lasso_VNIR_LLO_best_models.RData")
-write_xlsx(lasso_VNIR_LLO_cross_validation,
-           "./03_crossValidation/lasso_VNIR_LLO_cross_validation.xlsx",
+save(lasso_VNIR_LSPO_cross_validation ,
+     file = "./03_crossValidation/lasso_VNIR_LSPO_cross_validation.RData")
+save(lasso_VNIR_LSPO_best_models,
+     file = "./03_crossValidation/lasso_VNIR_LSPO_best_models.RData")
+write_xlsx(lasso_VNIR_LSPO_cross_validation,
+           "./03_crossValidation/lasso_VNIR_LSPO_cross_validation.xlsx",
            col_names = TRUE)
-write_xlsx(lasso_VNIR_LLO_best_models,
-           "./03_crossValidation/lasso_VNIR_LLO_best_models.xlsx",
+write_xlsx(lasso_VNIR_LSPO_best_models,
+           "./03_crossValidation/lasso_VNIR_LSPO_best_models.xlsx",
            col_names = TRUE)
 
-remove(lasso_VNIR_LLO_cross_validation, lasso_VNIR_LLO_best_models)
+remove(lasso_VNIR_LSPO_cross_validation, lasso_VNIR_LSPO_best_models)
 
 tf <- Sys.time()
 
-write.table(paste0("Tempo requerido pelo LASSO com LLO CV","\n",
+write.table(paste0("Tempo requerido pelo LASSO com LSPO CV","\n",
                    "Tempo inicial = ", ti, "\n",
                    "Tempo final = ", tf, "\n",
                    "Diferença de tempo = ", (tf-ti)),
-            file = "training_time_LASSO_LLO.txt")
+            file = "training_time_LASSO_LSPO.txt")
 
 # Training with k-Fold CV -------------------------------------------------
 controlObject <- trainControl(method = "repeatedcv", number = 10,
@@ -286,8 +286,8 @@ for (i in 1:100) {
   
   ## Training model
   MIR_LASSO_kFold <- train(
-    x = X_MIR_LLO_training,
-    y = Y_MIR_LLO_training,
+    x = X_MIR_LSPO_training,
+    y = Y_MIR_LSPO_training,
     method = "glmnet",
     preProc = c("zv", "center", "scale"),
     trControl = controlObject,
@@ -346,8 +346,8 @@ for (i in 1:100) {
   
   ## Training model
   VNIR_LASSO_kFold <- train(
-    x = X_VNIR_LLO_training,
-    y = Y_VNIR_LLO_training,
+    x = X_VNIR_LSPO_training,
+    y = Y_VNIR_LSPO_training,
     method = "glmnet",
     preProc = c("zv", "center", "scale"),
     trControl = controlObject,

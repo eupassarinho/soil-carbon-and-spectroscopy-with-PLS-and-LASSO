@@ -62,111 +62,111 @@ set.seed(256)
 ProfileF <- sample(1:(MIR$Amostra %>% unique() %>% length()), 
                    round(0.8*(MIR$Amostra %>% unique() %>% length()), 0))
 
-#MIR_LLO_training <- MIR %>% dplyr::filter(Perfil %in% ProfileF)
-MIR_LLO_testing <- MIR %>% dplyr::filter(!Perfil %in% ProfileF)
+#MIR_LSPO_training <- MIR %>% dplyr::filter(Perfil %in% ProfileF)
+MIR_LSPO_testing <- MIR %>% dplyr::filter(!Perfil %in% ProfileF)
 
 set.seed(365)
 ProfileF <- sample(1:(MIR$Amostra %>% unique() %>% length()), 
                    round(0.8*(MIR$Amostra %>% unique() %>% length()), 0))
 
-#VNIR_LLO_training <- VNIR_SWIR %>% dplyr::filter(Perfil %in% ProfileF)
-VNIR_LLO_testing <- VNIR_SWIR %>% dplyr::filter(!Perfil %in% ProfileF)
+#VNIR_LSPO_training <- VNIR_SWIR %>% dplyr::filter(Perfil %in% ProfileF)
+VNIR_LSPO_testing <- VNIR_SWIR %>% dplyr::filter(!Perfil %in% ProfileF)
 
 # Casting data frames to arrays, required by LASSO method -----------------
 ## First for MIR datasets
-X_MIR_LLO_testing <- model.matrix(
+X_MIR_LSPO_testing <- model.matrix(
   `C (g kg)` ~.,
-  MIR_LLO_testing %>% select(c(10, 14, 18:(ncol(MIR_LLO_testing)-1))))[,-1]
-Y_MIR_LLO_testing <- MIR_LLO_testing$`C (g kg)`
+  MIR_LSPO_testing %>% select(c(10, 14, 18:(ncol(MIR_LSPO_testing)-1))))[,-1]
+Y_MIR_LSPO_testing <- MIR_LSPO_testing$`C (g kg)`
 
 ## After for VNIR datasets
-X_VNIR_LLO_testing <- model.matrix(
+X_VNIR_LSPO_testing <- model.matrix(
   `C (g kg)` ~.,
-  VNIR_LLO_testing %>% select(c(3:4, 10, 14, 18:(ncol(VNIR_LLO_testing)-1))))[,-1]
-Y_VNIR_LLO_testing <- VNIR_LLO_testing$`C (g kg)`
+  VNIR_LSPO_testing %>% select(c(3:4, 10, 14, 18:(ncol(VNIR_LSPO_testing)-1))))[,-1]
+Y_VNIR_LSPO_testing <- VNIR_LSPO_testing$`C (g kg)`
 
 rm(MIR, VNIR_SWIR)
 
 # Predicting carbon with the trained models -------------------------------
-# Predicting with MIR PLS LLO models --------------------------------------
+# Predicting with MIR PLS LSPO models --------------------------------------
 
 ti <- Sys.time()
 
-list_MIR_PLS_LLO <- list.files("./02_tuned_models/",
-                               pattern = "pls_MIR_LLO_tuned_model")
+list_MIR_PLS_LSPO <- list.files("./02_tuned_models/",
+                               pattern = "pls_MIR_LSPO_tuned_model")
 
 ## Part 1
-pred_MIR_PLS_LLO_1 <- list()
+pred_MIR_PLS_LSPO_1 <- list()
 
 for (i in 1:50) {
-  load(paste("./02_tuned_models/",list_MIR_PLS_LLO[i], sep = ""))
-  var_name <- strsplit(list_MIR_PLS_LLO[i], '\\.')[[1]][1]
+  load(paste("./02_tuned_models/",list_MIR_PLS_LSPO[i], sep = ""))
+  var_name <- strsplit(list_MIR_PLS_LSPO[i], '\\.')[[1]][1]
   
-  pred_MIR_PLS_LLO_1[[i]] <- tibble(SOC_model_ = predict(MIR_PLS_LLO,
-                                                         MIR_LLO_testing)) %>%
+  pred_MIR_PLS_LSPO_1[[i]] <- tibble(SOC_model_ = predict(MIR_PLS_LSPO,
+                                                         MIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
-  rm(MIR_PLS_LLO, var_name)
+  rm(MIR_PLS_LSPO, var_name)
 }
-pred_MIR_PLS_LLO_1 <- bind_cols(MIR_LLO_testing[,1:17], pred_MIR_PLS_LLO)
-save(pred_MIR_PLS_LLO,
-     file = "./04_modelsPredictions_vip/pred_MIR_PLS_LLO.RData")
-rm(list_MIR_PLS_LLO)
+pred_MIR_PLS_LSPO_1 <- bind_cols(MIR_LSPO_testing[,1:17], pred_MIR_PLS_LSPO)
+save(pred_MIR_PLS_LSPO,
+     file = "./04_modelsPredictions_vip/pred_MIR_PLS_LSPO.RData")
+rm(list_MIR_PLS_LSPO)
 
-list_MIR_PLS_LLO <- list.files("./02_tuned_models/",
-                               pattern = "pls_MIR_LLO_tuned_model")
+list_MIR_PLS_LSPO <- list.files("./02_tuned_models/",
+                               pattern = "pls_MIR_LSPO_tuned_model")
 
 ## Part 2
-pred_MIR_PLS_LLO_2 <- list()
+pred_MIR_PLS_LSPO_2 <- list()
 
 for (i in 51:75) {
-  load(paste("./02_tuned_models/",list_MIR_PLS_LLO[i], sep = ""))
-  var_name <- strsplit(list_MIR_PLS_LLO[i], '\\.')[[1]][1]
+  load(paste("./02_tuned_models/",list_MIR_PLS_LSPO[i], sep = ""))
+  var_name <- strsplit(list_MIR_PLS_LSPO[i], '\\.')[[1]][1]
   
-  pred_MIR_PLS_LLO_2[[i]] <- tibble(
-    SOC_model_ = predict(MIR_PLS_LLO, MIR_LLO_testing)) %>%
+  pred_MIR_PLS_LSPO_2[[i]] <- tibble(
+    SOC_model_ = predict(MIR_PLS_LSPO, MIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
-  rm(MIR_PLS_LLO, var_name)
+  rm(MIR_PLS_LSPO, var_name)
 }
-pred_MIR_PLS_LLO_2  <- bind_cols(MIR_LLO_testing[,1:17], pred_MIR_PLS_LLO_2)
-save(pred_MIR_PLS_LLO_2, 
-     file = "./04_modelsPredictions_vip/pred_MIR_PLS_LLO_2.RData")
-rm(list_MIR_PLS_LLO)
+pred_MIR_PLS_LSPO_2  <- bind_cols(MIR_LSPO_testing[,1:17], pred_MIR_PLS_LSPO_2)
+save(pred_MIR_PLS_LSPO_2, 
+     file = "./04_modelsPredictions_vip/pred_MIR_PLS_LSPO_2.RData")
+rm(list_MIR_PLS_LSPO)
 
-list_MIR_PLS_LLO <- list.files("./02_tuned_models/",
-                               pattern = "pls_MIR_LLO_tuned_model")
+list_MIR_PLS_LSPO <- list.files("./02_tuned_models/",
+                               pattern = "pls_MIR_LSPO_tuned_model")
 
 ## Part 3
-pred_MIR_PLS_LLO_3 <- list()
+pred_MIR_PLS_LSPO_3 <- list()
 for (i in 76:100) {
-  load(paste("./02_tuned_models/",list_MIR_PLS_LLO[i], sep = ""))
-  var_name <- strsplit(list_MIR_PLS_LLO[i], '\\.')[[1]][1]
+  load(paste("./02_tuned_models/",list_MIR_PLS_LSPO[i], sep = ""))
+  var_name <- strsplit(list_MIR_PLS_LSPO[i], '\\.')[[1]][1]
   
-  pred_MIR_PLS_LLO_3[[i]] <- tibble(
-    SOC_model_ = predict(MIR_PLS_LLO, MIR_LLO_testing)) %>%
+  pred_MIR_PLS_LSPO_3[[i]] <- tibble(
+    SOC_model_ = predict(MIR_PLS_LSPO, MIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
-  rm(MIR_PLS_LLO, var_name)
+  rm(MIR_PLS_LSPO, var_name)
 }
 
-pred_MIR_PLS_LLO_3  <- bind_cols(MIR_LLO_testing[,1:17], pred_MIR_PLS_LLO_3)
-save(pred_MIR_PLS_LLO_3, 
-     file = "./04_modelsPredictions_vip/pred_MIR_PLS_LLO_3.RData")
+pred_MIR_PLS_LSPO_3  <- bind_cols(MIR_LSPO_testing[,1:17], pred_MIR_PLS_LSPO_3)
+save(pred_MIR_PLS_LSPO_3, 
+     file = "./04_modelsPredictions_vip/pred_MIR_PLS_LSPO_3.RData")
 
-rm(list_MIR_PLS_LLO)
+rm(list_MIR_PLS_LSPO)
 
 ###########################################################################
 tf  <- Sys.time()
 tf - ti
 
-test_MIR_PLS_LLO <- bind_cols(pred_MIR_PLS_LLO_2 %>% select(1:17),
-                bind_cols(pred_MIR_PLS_LLO_1),
-                pred_MIR_PLS_LLO_2 %>% select(18:42),
-                pred_MIR_PLS_LLO_3 %>% select(18:42))
+test_MIR_PLS_LSPO <- bind_cols(pred_MIR_PLS_LSPO_2 %>% select(1:17),
+                bind_cols(pred_MIR_PLS_LSPO_1),
+                pred_MIR_PLS_LSPO_2 %>% select(18:42),
+                pred_MIR_PLS_LSPO_3 %>% select(18:42))
 
-write_xlsx(test_MIR_PLS_LLO,
-           "./04_modelsPredictions_vip/test_MIR_PLS_LLO.xlsx")
+write_xlsx(test_MIR_PLS_LSPO,
+           "./04_modelsPredictions_vip/test_MIR_PLS_LSPO.xlsx")
 
 # Predicting with MIR PLS k-Fold models -----------------------------------
 
@@ -183,12 +183,12 @@ for (i in 1:50) {
   var_name <- strsplit(list_MIR_PLS_kFold[i], '\\.')[[1]][1]
   
   pred_MIR_PLS_kFold_1[[i]] <- tibble(SOC_model_ = predict(MIR_PLS_kFold,
-                                                           MIR_LLO_testing)) %>%
+                                                           MIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
   rm(MIR_PLS_kFold, var_name)
 }
-pred_MIR_PLS_kFold_1 <- bind_cols(MIR_LLO_testing[,1:17], pred_MIR_PLS_kFold_1)
+pred_MIR_PLS_kFold_1 <- bind_cols(MIR_LSPO_testing[,1:17], pred_MIR_PLS_kFold_1)
 save(pred_MIR_PLS_kFold_1,
      file = "./04_modelsPredictions_vip/pred_MIR_PLS_kFold.RData")
 
@@ -200,12 +200,12 @@ for (i in 51:75) {
   var_name <- strsplit(list_MIR_PLS_kFold[i], '\\.')[[1]][1]
   
   pred_MIR_PLS_kFold_2[[i]] <- tibble(
-    SOC_model_ = predict(MIR_PLS_kFold, MIR_LLO_testing)) %>%
+    SOC_model_ = predict(MIR_PLS_kFold, MIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
   rm(MIR_PLS_kFold, var_name)
 }
-pred_MIR_PLS_kFold_2  <- bind_cols(MIR_LLO_testing[,1:17], pred_MIR_PLS_kFold_2)
+pred_MIR_PLS_kFold_2  <- bind_cols(MIR_LSPO_testing[,1:17], pred_MIR_PLS_kFold_2)
 save(pred_MIR_PLS_kFold_2, 
      file = "./04_modelsPredictions_vip/pred_MIR_PLS_kFold_2.RData")
 
@@ -216,13 +216,13 @@ for (i in 76:100) {
   var_name <- strsplit(list_MIR_PLS_kFold[i], '\\.')[[1]][1]
   
   pred_MIR_PLS_kFold_3[[i]] <- tibble(
-    SOC_model_ = predict(MIR_PLS_kFold, MIR_LLO_testing)) %>%
+    SOC_model_ = predict(MIR_PLS_kFold, MIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
   rm(MIR_PLS_kFold, var_name)
 }
 
-pred_MIR_PLS_kFold_3  <- bind_cols(MIR_LLO_testing[,1:17], pred_MIR_PLS_kFold_3)
+pred_MIR_PLS_kFold_3  <- bind_cols(MIR_LSPO_testing[,1:17], pred_MIR_PLS_kFold_3)
 save(pred_MIR_PLS_kFold_3, 
      file = "./04_modelsPredictions_vip/pred_MIR_PLS_kFold_3.RData")
 
@@ -239,85 +239,85 @@ test_MIR_PLS_kFold <- bind_cols(pred_MIR_PLS_kFold_1,
 write_xlsx(test_MIR_PLS_kFold,
            "./04_modelsPredictions_vip/test_MIR_PLS_kFold.xlsx")
 
-# Predicting with VNIR PLS LLO models --------------------------------------
+# Predicting with VNIR PLS LSPO models --------------------------------------
 
 ti <- Sys.time()
 
-list_VNIR_PLS_LLO <- list.files("./02_tuned_models/",
-                               pattern = "pls_VNIR_LLO_tuned_model")
+list_VNIR_PLS_LSPO <- list.files("./02_tuned_models/",
+                               pattern = "pls_VNIR_LSPO_tuned_model")
 
 ## Part 1
-pred_VNIR_PLS_LLO_1 <- list()
+pred_VNIR_PLS_LSPO_1 <- list()
 
 for (i in 1:50) {
-  load(paste("./02_tuned_models/",list_VNIR_PLS_LLO[i], sep = ""))
-  var_name <- strsplit(list_VNIR_PLS_LLO[i], '\\.')[[1]][1]
+  load(paste("./02_tuned_models/",list_VNIR_PLS_LSPO[i], sep = ""))
+  var_name <- strsplit(list_VNIR_PLS_LSPO[i], '\\.')[[1]][1]
   
-  pred_VNIR_PLS_LLO_1[[i]] <- tibble(SOC_model_ = predict(VNIR_PLS_LLO,
-                                                         VNIR_LLO_testing)) %>%
+  pred_VNIR_PLS_LSPO_1[[i]] <- tibble(SOC_model_ = predict(VNIR_PLS_LSPO,
+                                                         VNIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
-  rm(VNIR_PLS_LLO, var_name)
+  rm(VNIR_PLS_LSPO, var_name)
 }
-pred_VNIR_PLS_LLO_1 <- bind_cols(VNIR_LLO_testing[,1:17], pred_VNIR_PLS_LLO)
-save(pred_VNIR_PLS_LLO,
-     file = "./04_modelsPredictions_vip/pred_VNIR_PLS_LLO.RData")
-rm(list_VNIR_PLS_LLO)
+pred_VNIR_PLS_LSPO_1 <- bind_cols(VNIR_LSPO_testing[,1:17], pred_VNIR_PLS_LSPO)
+save(pred_VNIR_PLS_LSPO,
+     file = "./04_modelsPredictions_vip/pred_VNIR_PLS_LSPO.RData")
+rm(list_VNIR_PLS_LSPO)
 
-list_VNIR_PLS_LLO <- list.files("./02_tuned_models/",
-                               pattern = "pls_VNIR_LLO_tuned_model")
+list_VNIR_PLS_LSPO <- list.files("./02_tuned_models/",
+                               pattern = "pls_VNIR_LSPO_tuned_model")
 
 ## Part 2
-pred_VNIR_PLS_LLO_2 <- list()
+pred_VNIR_PLS_LSPO_2 <- list()
 
 for (i in 51:75) {
-  load(paste("./02_tuned_models/",list_VNIR_PLS_LLO[i], sep = ""))
-  var_name <- strsplit(list_VNIR_PLS_LLO[i], '\\.')[[1]][1]
+  load(paste("./02_tuned_models/",list_VNIR_PLS_LSPO[i], sep = ""))
+  var_name <- strsplit(list_VNIR_PLS_LSPO[i], '\\.')[[1]][1]
   
-  pred_VNIR_PLS_LLO_2[[i]] <- tibble(
-    SOC_model_ = predict(VNIR_PLS_LLO, VNIR_LLO_testing)) %>%
+  pred_VNIR_PLS_LSPO_2[[i]] <- tibble(
+    SOC_model_ = predict(VNIR_PLS_LSPO, VNIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
-  rm(VNIR_PLS_LLO, var_name)
+  rm(VNIR_PLS_LSPO, var_name)
 }
-pred_VNIR_PLS_LLO_2  <- bind_cols(VNIR_LLO_testing[,1:17], pred_VNIR_PLS_LLO_2)
-save(pred_VNIR_PLS_LLO_2, 
-     file = "./04_modelsPredictions_vip/pred_VNIR_PLS_LLO_2.RData")
-rm(list_VNIR_PLS_LLO)
+pred_VNIR_PLS_LSPO_2  <- bind_cols(VNIR_LSPO_testing[,1:17], pred_VNIR_PLS_LSPO_2)
+save(pred_VNIR_PLS_LSPO_2, 
+     file = "./04_modelsPredictions_vip/pred_VNIR_PLS_LSPO_2.RData")
+rm(list_VNIR_PLS_LSPO)
 
-list_VNIR_PLS_LLO <- list.files("./02_tuned_models/",
-                               pattern = "pls_VNIR_LLO_tuned_model")
+list_VNIR_PLS_LSPO <- list.files("./02_tuned_models/",
+                               pattern = "pls_VNIR_LSPO_tuned_model")
 
 ## Part 3
-pred_VNIR_PLS_LLO_3 <- list()
+pred_VNIR_PLS_LSPO_3 <- list()
 for (i in 76:100) {
-  load(paste("./02_tuned_models/",list_VNIR_PLS_LLO[i], sep = ""))
-  var_name <- strsplit(list_VNIR_PLS_LLO[i], '\\.')[[1]][1]
+  load(paste("./02_tuned_models/",list_VNIR_PLS_LSPO[i], sep = ""))
+  var_name <- strsplit(list_VNIR_PLS_LSPO[i], '\\.')[[1]][1]
   
-  pred_VNIR_PLS_LLO_3[[i]] <- tibble(
-    SOC_model_ = predict(VNIR_PLS_LLO, VNIR_LLO_testing)) %>%
+  pred_VNIR_PLS_LSPO_3[[i]] <- tibble(
+    SOC_model_ = predict(VNIR_PLS_LSPO, VNIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
-  rm(VNIR_PLS_LLO, var_name)
+  rm(VNIR_PLS_LSPO, var_name)
 }
 
-pred_VNIR_PLS_LLO_3  <- bind_cols(VNIR_LLO_testing[,1:17], pred_VNIR_PLS_LLO_3)
-save(pred_VNIR_PLS_LLO_3, 
-     file = "./04_modelsPredictions_vip/pred_VNIR_PLS_LLO_3.RData")
+pred_VNIR_PLS_LSPO_3  <- bind_cols(VNIR_LSPO_testing[,1:17], pred_VNIR_PLS_LSPO_3)
+save(pred_VNIR_PLS_LSPO_3, 
+     file = "./04_modelsPredictions_vip/pred_VNIR_PLS_LSPO_3.RData")
 
-rm(list_VNIR_PLS_LLO)
+rm(list_VNIR_PLS_LSPO)
 
 ###########################################################################
 tf  <- Sys.time()
 tf - ti
 
-test_VNIR_PLS_LLO <- bind_cols(pred_VNIR_PLS_LLO_2 %>% select(1:17),
-                              bind_cols(pred_VNIR_PLS_LLO_1),
-                              pred_VNIR_PLS_LLO_2 %>% select(18:42),
-                              pred_VNIR_PLS_LLO_3 %>% select(18:42))
+test_VNIR_PLS_LSPO <- bind_cols(pred_VNIR_PLS_LSPO_2 %>% select(1:17),
+                              bind_cols(pred_VNIR_PLS_LSPO_1),
+                              pred_VNIR_PLS_LSPO_2 %>% select(18:42),
+                              pred_VNIR_PLS_LSPO_3 %>% select(18:42))
 
-write_xlsx(test_VNIR_PLS_LLO,
-           "./04_modelsPredictions_vip/test_VNIR_PLS_LLO.xlsx")
+write_xlsx(test_VNIR_PLS_LSPO,
+           "./04_modelsPredictions_vip/test_VNIR_PLS_LSPO.xlsx")
 
 # Predicting with VNIR PLS k-Fold models -----------------------------------
 
@@ -334,12 +334,12 @@ for (i in 1:50) {
   var_name <- strsplit(list_VNIR_PLS_kFold[i], '\\.')[[1]][1]
   
   pred_VNIR_PLS_kFold_1[[i]] <- tibble(SOC_model_ = predict(VNIR_PLS_kFold,
-                                                           VNIR_LLO_testing)) %>%
+                                                           VNIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
   rm(VNIR_PLS_kFold, var_name)
 }
-pred_VNIR_PLS_kFold_1 <- bind_cols(VNIR_LLO_testing[,1:17], pred_VNIR_PLS_kFold_1)
+pred_VNIR_PLS_kFold_1 <- bind_cols(VNIR_LSPO_testing[,1:17], pred_VNIR_PLS_kFold_1)
 save(pred_VNIR_PLS_kFold_1,
      file = "./04_modelsPredictions_vip/pred_VNIR_PLS_kFold.RData")
 
@@ -351,12 +351,12 @@ for (i in 51:75) {
   var_name <- strsplit(list_VNIR_PLS_kFold[i], '\\.')[[1]][1]
   
   pred_VNIR_PLS_kFold_2[[i]] <- tibble(
-    SOC_model_ = predict(VNIR_PLS_kFold, VNIR_LLO_testing)) %>%
+    SOC_model_ = predict(VNIR_PLS_kFold, VNIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
   rm(VNIR_PLS_kFold, var_name)
 }
-pred_VNIR_PLS_kFold_2  <- bind_cols(VNIR_LLO_testing[,1:17], pred_VNIR_PLS_kFold_2)
+pred_VNIR_PLS_kFold_2  <- bind_cols(VNIR_LSPO_testing[,1:17], pred_VNIR_PLS_kFold_2)
 save(pred_VNIR_PLS_kFold_2, 
      file = "./04_modelsPredictions_vip/pred_VNIR_PLS_kFold_2.RData")
 
@@ -367,13 +367,13 @@ for (i in 76:100) {
   var_name <- strsplit(list_VNIR_PLS_kFold[i], '\\.')[[1]][1]
   
   pred_VNIR_PLS_kFold_3[[i]] <- tibble(
-    SOC_model_ = predict(VNIR_PLS_kFold, VNIR_LLO_testing)) %>%
+    SOC_model_ = predict(VNIR_PLS_kFold, VNIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
   rm(VNIR_PLS_kFold, var_name)
 }
 
-pred_VNIR_PLS_kFold_3  <- bind_cols(VNIR_LLO_testing[,1:17], pred_VNIR_PLS_kFold_3)
+pred_VNIR_PLS_kFold_3  <- bind_cols(VNIR_LSPO_testing[,1:17], pred_VNIR_PLS_kFold_3)
 save(pred_VNIR_PLS_kFold_3, 
      file = "./04_modelsPredictions_vip/pred_VNIR_PLS_kFold_3.RData")
 
@@ -390,76 +390,76 @@ test_VNIR_PLS_kFold <- bind_cols(pred_VNIR_PLS_kFold_1,
 write_xlsx(test_VNIR_PLS_kFold,
            "./04_modelsPredictions_vip/test_VNIR_PLS_kFold.xlsx")
 
-# Predicting with MIR LASSO LLO models ------------------------------------
+# Predicting with MIR LASSO LSPO models ------------------------------------
 
 ti <- Sys.time()
 
-list_MIR_LASSO_LLO <- list.files("./02_tuned_models/",
-                                 pattern = "lasso_MIR_LLO_tuned_model")
+list_MIR_LASSO_LSPO <- list.files("./02_tuned_models/",
+                                 pattern = "lasso_MIR_LSPO_tuned_model")
 
 ## Part 1
-pred_MIR_LASSO_LLO_1 <- list()
+pred_MIR_LASSO_LSPO_1 <- list()
 
 for (i in 1:50) {
-  load(paste("./02_tuned_models/",list_MIR_LASSO_LLO[i], sep = ""))
-  var_name <- strsplit(list_MIR_LASSO_LLO[i], '\\.')[[1]][1]
+  load(paste("./02_tuned_models/",list_MIR_LASSO_LSPO[i], sep = ""))
+  var_name <- strsplit(list_MIR_LASSO_LSPO[i], '\\.')[[1]][1]
   
-  pred_MIR_LASSO_LLO_1[[i]] <- tibble(SOC_model_ = predict(MIR_LASSO_LLO,
-                                                           X_MIR_LLO_testing)) %>%
+  pred_MIR_LASSO_LSPO_1[[i]] <- tibble(SOC_model_ = predict(MIR_LASSO_LSPO,
+                                                           X_MIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
-  rm(MIR_LASSO_LLO, var_name)
+  rm(MIR_LASSO_LSPO, var_name)
 }
-pred_MIR_LASSO_LLO_1 <- bind_cols(MIR_LLO_testing[,1:17], pred_MIR_LASSO_LLO_1)
-save(pred_MIR_LASSO_LLO_1,
-     file = "./04_modelsPredictions_vip/pred_MIR_LASSO_LLO.RData")
+pred_MIR_LASSO_LSPO_1 <- bind_cols(MIR_LSPO_testing[,1:17], pred_MIR_LASSO_LSPO_1)
+save(pred_MIR_LASSO_LSPO_1,
+     file = "./04_modelsPredictions_vip/pred_MIR_LASSO_LSPO.RData")
 
 ## Part 2
-pred_MIR_LASSO_LLO_2 <- list()
+pred_MIR_LASSO_LSPO_2 <- list()
 
 for (i in 51:75) {
-  load(paste("./02_tuned_models/",list_MIR_LASSO_LLO[i], sep = ""))
-  var_name <- strsplit(list_MIR_LASSO_LLO[i], '\\.')[[1]][1]
+  load(paste("./02_tuned_models/",list_MIR_LASSO_LSPO[i], sep = ""))
+  var_name <- strsplit(list_MIR_LASSO_LSPO[i], '\\.')[[1]][1]
   
-  pred_MIR_LASSO_LLO_2[[i]] <- tibble(
-    SOC_model_ = predict(MIR_LASSO_LLO, X_MIR_LLO_testing)) %>%
+  pred_MIR_LASSO_LSPO_2[[i]] <- tibble(
+    SOC_model_ = predict(MIR_LASSO_LSPO, X_MIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
-  rm(MIR_LASSO_LLO, var_name)
+  rm(MIR_LASSO_LSPO, var_name)
 }
-pred_MIR_LASSO_LLO_2  <- bind_cols(MIR_LLO_testing[,1:17], pred_MIR_LASSO_LLO_2)
-save(pred_MIR_LASSO_LLO_2, 
-     file = "./04_modelsPredictions_vip/pred_MIR_LASSO_LLO_2.RData")
+pred_MIR_LASSO_LSPO_2  <- bind_cols(MIR_LSPO_testing[,1:17], pred_MIR_LASSO_LSPO_2)
+save(pred_MIR_LASSO_LSPO_2, 
+     file = "./04_modelsPredictions_vip/pred_MIR_LASSO_LSPO_2.RData")
 
 ## Part 3
-pred_MIR_LASSO_LLO_3 <- list()
+pred_MIR_LASSO_LSPO_3 <- list()
 for (i in 76:100) {
-  load(paste("./02_tuned_models/",list_MIR_LASSO_LLO[i], sep = ""))
-  var_name <- strsplit(list_MIR_LASSO_LLO[i], '\\.')[[1]][1]
+  load(paste("./02_tuned_models/",list_MIR_LASSO_LSPO[i], sep = ""))
+  var_name <- strsplit(list_MIR_LASSO_LSPO[i], '\\.')[[1]][1]
   
-  pred_MIR_LASSO_LLO_3[[i]] <- tibble(
-    SOC_model_ = predict(MIR_LASSO_LLO, X_MIR_LLO_testing)) %>%
+  pred_MIR_LASSO_LSPO_3[[i]] <- tibble(
+    SOC_model_ = predict(MIR_LASSO_LSPO, X_MIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
-  rm(MIR_LASSO_LLO, var_name)
+  rm(MIR_LASSO_LSPO, var_name)
 }
 
-pred_MIR_LASSO_LLO_3  <- bind_cols(MIR_LLO_testing[,1:17], pred_MIR_LASSO_LLO_3)
-save(pred_MIR_LASSO_LLO_3, 
-     file = "./04_modelsPredictions_vip/pred_MIR_LASSO_LLO_3.RData")
+pred_MIR_LASSO_LSPO_3  <- bind_cols(MIR_LSPO_testing[,1:17], pred_MIR_LASSO_LSPO_3)
+save(pred_MIR_LASSO_LSPO_3, 
+     file = "./04_modelsPredictions_vip/pred_MIR_LASSO_LSPO_3.RData")
 
-rm(list_MIR_LASSO_LLO)
+rm(list_MIR_LASSO_LSPO)
 
 ###########################################################################
 tf  <- Sys.time()
 tf - ti
 
-test_MIR_LASSO_LLO <- bind_cols(pred_MIR_LASSO_LLO_1,
-                                pred_MIR_LASSO_LLO_2 %>% select(18:42),
-                                pred_MIR_LASSO_LLO_3 %>% select(18:42))
+test_MIR_LASSO_LSPO <- bind_cols(pred_MIR_LASSO_LSPO_1,
+                                pred_MIR_LASSO_LSPO_2 %>% select(18:42),
+                                pred_MIR_LASSO_LSPO_3 %>% select(18:42))
 
-write_xlsx(test_MIR_LASSO_LLO,
-           "./04_modelsPredictions_vip/test_MIR_LASSO_LLO.xlsx")
+write_xlsx(test_MIR_LASSO_LSPO,
+           "./04_modelsPredictions_vip/test_MIR_LASSO_LSPO.xlsx")
 
 # Predicting with MIR LASSO kFold models ------------------------------------
 
@@ -476,12 +476,12 @@ for (i in 1:50) {
   var_name <- strsplit(list_MIR_LASSO_kFold[i], '\\.')[[1]][1]
   
   pred_MIR_LASSO_kFold_1[[i]] <- tibble(SOC_model_ = predict(MIR_LASSO_kFold,
-                                                           X_MIR_LLO_testing)) %>%
+                                                           X_MIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
   rm(MIR_LASSO_kFold, var_name)
 }
-pred_MIR_LASSO_kFold_1 <- bind_cols(MIR_LLO_testing[,1:17], pred_MIR_LASSO_kFold_1)
+pred_MIR_LASSO_kFold_1 <- bind_cols(MIR_LSPO_testing[,1:17], pred_MIR_LASSO_kFold_1)
 save(pred_MIR_LASSO_kFold_1,
      file = "./04_modelsPredictions_vip/pred_MIR_LASSO_kFold_1.RData")
 
@@ -493,12 +493,12 @@ for (i in 51:75) {
   var_name <- strsplit(list_MIR_LASSO_kFold[i], '\\.')[[1]][1]
   
   pred_MIR_LASSO_kFold_2[[i]] <- tibble(
-    SOC_model_ = predict(MIR_LASSO_kFold, X_MIR_LLO_testing)) %>%
+    SOC_model_ = predict(MIR_LASSO_kFold, X_MIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
   rm(MIR_LASSO_kFold, var_name)
 }
-pred_MIR_LASSO_kFold_2  <- bind_cols(MIR_LLO_testing[,1:17], pred_MIR_LASSO_kFold_2)
+pred_MIR_LASSO_kFold_2  <- bind_cols(MIR_LSPO_testing[,1:17], pred_MIR_LASSO_kFold_2)
 save(pred_MIR_LASSO_kFold_2, 
      file = "./04_modelsPredictions_vip/pred_MIR_LASSO_kFold_2.RData")
 
@@ -509,13 +509,13 @@ for (i in 76:100) {
   var_name <- strsplit(list_MIR_LASSO_kFold[i], '\\.')[[1]][1]
   
   pred_MIR_LASSO_kFold_3[[i]] <- tibble(
-    SOC_model_ = predict(MIR_LASSO_kFold, X_MIR_LLO_testing)) %>%
+    SOC_model_ = predict(MIR_LASSO_kFold, X_MIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
   rm(MIR_LASSO_kFold, var_name)
 }
 
-pred_MIR_LASSO_kFold_3  <- bind_cols(MIR_LLO_testing[,1:17], pred_MIR_LASSO_kFold_3)
+pred_MIR_LASSO_kFold_3  <- bind_cols(MIR_LSPO_testing[,1:17], pred_MIR_LASSO_kFold_3)
 save(pred_MIR_LASSO_kFold_3, 
      file = "./04_modelsPredictions_vip/pred_MIR_LASSO_kFold_3.RData")
 
@@ -532,76 +532,76 @@ test_MIR_LASSO_kFold <- bind_cols(pred_MIR_LASSO_kFold_1,
 write_xlsx(test_MIR_LASSO_kFold,
            "./04_modelsPredictions_vip/test_MIR_LASSO_kFold.xlsx")
 
-# Predicting with VNIR LASSO LLO models ------------------------------------
+# Predicting with VNIR LASSO LSPO models ------------------------------------
 
 ti <- Sys.time()
 
-list_VNIR_LASSO_LLO <- list.files("./02_tuned_models/",
-                                 pattern = "lasso_VNIR_LLO_tuned_model")
+list_VNIR_LASSO_LSPO <- list.files("./02_tuned_models/",
+                                 pattern = "lasso_VNIR_LSPO_tuned_model")
 
 ## Part 1
-pred_VNIR_LASSO_LLO_1 <- list()
+pred_VNIR_LASSO_LSPO_1 <- list()
 
 for (i in 1:50) {
-  load(paste("./02_tuned_models/",list_VNIR_LASSO_LLO[i], sep = ""))
-  var_name <- strsplit(list_VNIR_LASSO_LLO[i], '\\.')[[1]][1]
+  load(paste("./02_tuned_models/",list_VNIR_LASSO_LSPO[i], sep = ""))
+  var_name <- strsplit(list_VNIR_LASSO_LSPO[i], '\\.')[[1]][1]
   
-  pred_VNIR_LASSO_LLO_1[[i]] <- tibble(SOC_model_ = predict(VNIR_LASSO_LLO,
-                                                           X_VNIR_LLO_testing)) %>%
+  pred_VNIR_LASSO_LSPO_1[[i]] <- tibble(SOC_model_ = predict(VNIR_LASSO_LSPO,
+                                                           X_VNIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
-  rm(VNIR_LASSO_LLO, var_name)
+  rm(VNIR_LASSO_LSPO, var_name)
 }
-pred_VNIR_LASSO_LLO_1 <- bind_cols(VNIR_LLO_testing[,1:17], pred_VNIR_LASSO_LLO_1)
-save(pred_VNIR_LASSO_LLO_1,
-     file = "./04_modelsPredictions_vip/pred_VNIR_LASSO_LLO.RData")
+pred_VNIR_LASSO_LSPO_1 <- bind_cols(VNIR_LSPO_testing[,1:17], pred_VNIR_LASSO_LSPO_1)
+save(pred_VNIR_LASSO_LSPO_1,
+     file = "./04_modelsPredictions_vip/pred_VNIR_LASSO_LSPO.RData")
 
 ## Part 2
-pred_VNIR_LASSO_LLO_2 <- list()
+pred_VNIR_LASSO_LSPO_2 <- list()
 
 for (i in 51:75) {
-  load(paste("./02_tuned_models/",list_VNIR_LASSO_LLO[i], sep = ""))
-  var_name <- strsplit(list_VNIR_LASSO_LLO[i], '\\.')[[1]][1]
+  load(paste("./02_tuned_models/",list_VNIR_LASSO_LSPO[i], sep = ""))
+  var_name <- strsplit(list_VNIR_LASSO_LSPO[i], '\\.')[[1]][1]
   
-  pred_VNIR_LASSO_LLO_2[[i]] <- tibble(
-    SOC_model_ = predict(VNIR_LASSO_LLO, X_VNIR_LLO_testing)) %>%
+  pred_VNIR_LASSO_LSPO_2[[i]] <- tibble(
+    SOC_model_ = predict(VNIR_LASSO_LSPO, X_VNIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
-  rm(VNIR_LASSO_LLO, var_name)
+  rm(VNIR_LASSO_LSPO, var_name)
 }
-pred_VNIR_LASSO_LLO_2  <- bind_cols(VNIR_LLO_testing[,1:17], pred_VNIR_LASSO_LLO_2)
-save(pred_VNIR_LASSO_LLO_2, 
-     file = "./04_modelsPredictions_vip/pred_VNIR_LASSO_LLO_2.RData")
+pred_VNIR_LASSO_LSPO_2  <- bind_cols(VNIR_LSPO_testing[,1:17], pred_VNIR_LASSO_LSPO_2)
+save(pred_VNIR_LASSO_LSPO_2, 
+     file = "./04_modelsPredictions_vip/pred_VNIR_LASSO_LSPO_2.RData")
 
 ## Part 3
-pred_VNIR_LASSO_LLO_3 <- list()
+pred_VNIR_LASSO_LSPO_3 <- list()
 for (i in 76:100) {
-  load(paste("./02_tuned_models/",list_VNIR_LASSO_LLO[i], sep = ""))
-  var_name <- strsplit(list_VNIR_LASSO_LLO[i], '\\.')[[1]][1]
+  load(paste("./02_tuned_models/",list_VNIR_LASSO_LSPO[i], sep = ""))
+  var_name <- strsplit(list_VNIR_LASSO_LSPO[i], '\\.')[[1]][1]
   
-  pred_VNIR_LASSO_LLO_3[[i]] <- tibble(
-    SOC_model_ = predict(VNIR_LASSO_LLO, X_VNIR_LLO_testing)) %>%
+  pred_VNIR_LASSO_LSPO_3[[i]] <- tibble(
+    SOC_model_ = predict(VNIR_LASSO_LSPO, X_VNIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
-  rm(VNIR_LASSO_LLO, var_name)
+  rm(VNIR_LASSO_LSPO, var_name)
 }
 
-pred_VNIR_LASSO_LLO_3  <- bind_cols(VNIR_LLO_testing[,1:17], pred_VNIR_LASSO_LLO_3)
-save(pred_VNIR_LASSO_LLO_3, 
-     file = "./04_modelsPredictions_vip/pred_VNIR_LASSO_LLO_3.RData")
+pred_VNIR_LASSO_LSPO_3  <- bind_cols(VNIR_LSPO_testing[,1:17], pred_VNIR_LASSO_LSPO_3)
+save(pred_VNIR_LASSO_LSPO_3, 
+     file = "./04_modelsPredictions_vip/pred_VNIR_LASSO_LSPO_3.RData")
 
-rm(list_VNIR_LASSO_LLO)
+rm(list_VNIR_LASSO_LSPO)
 
 ###########################################################################
 tf  <- Sys.time()
 tf - ti
 
-test_VNIR_LASSO_LLO <- bind_cols(pred_VNIR_LASSO_LLO_1,
-                                pred_VNIR_LASSO_LLO_2 %>% select(18:42),
-                                pred_VNIR_LASSO_LLO_3 %>% select(18:42))
+test_VNIR_LASSO_LSPO <- bind_cols(pred_VNIR_LASSO_LSPO_1,
+                                pred_VNIR_LASSO_LSPO_2 %>% select(18:42),
+                                pred_VNIR_LASSO_LSPO_3 %>% select(18:42))
 
-write_xlsx(test_VNIR_LASSO_LLO,
-           "./04_modelsPredictions_vip/test_VNIR_LASSO_LLO.xlsx")
+write_xlsx(test_VNIR_LASSO_LSPO,
+           "./04_modelsPredictions_vip/test_VNIR_LASSO_LSPO.xlsx")
 
 # Predicting with VNIR LASSO kFold models ------------------------------------
 
@@ -618,12 +618,12 @@ for (i in 1:50) {
   var_name <- strsplit(list_VNIR_LASSO_kFold[i], '\\.')[[1]][1]
   
   pred_VNIR_LASSO_kFold_1[[i]] <- tibble(SOC_model_ = predict(VNIR_LASSO_kFold,
-                                                             X_VNIR_LLO_testing)) %>%
+                                                             X_VNIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
   rm(VNIR_LASSO_kFold, var_name)
 }
-pred_VNIR_LASSO_kFold_1 <- bind_cols(VNIR_LLO_testing[,1:17], pred_VNIR_LASSO_kFold_1)
+pred_VNIR_LASSO_kFold_1 <- bind_cols(VNIR_LSPO_testing[,1:17], pred_VNIR_LASSO_kFold_1)
 save(pred_VNIR_LASSO_kFold_1,
      file = "./04_modelsPredictions_vip/pred_VNIR_LASSO_kFold_1.RData")
 
@@ -635,12 +635,12 @@ for (i in 51:75) {
   var_name <- strsplit(list_VNIR_LASSO_kFold[i], '\\.')[[1]][1]
   
   pred_VNIR_LASSO_kFold_2[[i]] <- tibble(
-    SOC_model_ = predict(VNIR_LASSO_kFold, X_VNIR_LLO_testing)) %>%
+    SOC_model_ = predict(VNIR_LASSO_kFold, X_VNIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
   rm(VNIR_LASSO_kFold, var_name)
 }
-pred_VNIR_LASSO_kFold_2  <- bind_cols(VNIR_LLO_testing[,1:17], pred_VNIR_LASSO_kFold_2)
+pred_VNIR_LASSO_kFold_2  <- bind_cols(VNIR_LSPO_testing[,1:17], pred_VNIR_LASSO_kFold_2)
 save(pred_VNIR_LASSO_kFold_2, 
      file = "./04_modelsPredictions_vip/pred_VNIR_LASSO_kFold_2.RData")
 
@@ -651,13 +651,13 @@ for (i in 76:100) {
   var_name <- strsplit(list_VNIR_LASSO_kFold[i], '\\.')[[1]][1]
   
   pred_VNIR_LASSO_kFold_3[[i]] <- tibble(
-    SOC_model_ = predict(VNIR_LASSO_kFold, X_VNIR_LLO_testing)) %>%
+    SOC_model_ = predict(VNIR_LASSO_kFold, X_VNIR_LSPO_testing)) %>%
     rename_with(.fn = ~ glue("{var_name}"))
   # Cleaning up memory
   rm(VNIR_LASSO_kFold, var_name)
 }
 
-pred_VNIR_LASSO_kFold_3  <- bind_cols(VNIR_LLO_testing[,1:17], pred_VNIR_LASSO_kFold_3)
+pred_VNIR_LASSO_kFold_3  <- bind_cols(VNIR_LSPO_testing[,1:17], pred_VNIR_LASSO_kFold_3)
 save(pred_VNIR_LASSO_kFold_3, 
      file = "./04_modelsPredictions_vip/pred_VNIR_LASSO_kFold_3.RData")
 
@@ -677,40 +677,40 @@ write_xlsx(test_VNIR_LASSO_kFold,
 
 # Getting variable importance data ----------------------------------------
 # Getting vip from PLS-based models ---------------------------------------
-## PLS - MIR - LLO:
-vip_MIR_PLS_LLO <- list()
-list_MIR_PLS_LLO <- list.files("./02_tuned_models/",
-                               pattern = "pls_MIR_LLO_tuned_model")
+## PLS - MIR - LSPO:
+vip_MIR_PLS_LSPO <- list()
+list_MIR_PLS_LSPO <- list.files("./02_tuned_models/",
+                               pattern = "pls_MIR_LSPO_tuned_model")
 for (i in 1:100) {
   
-  load(paste("./02_tuned_models/",list_MIR_PLS_LLO[i], sep = ""))
+  load(paste("./02_tuned_models/",list_MIR_PLS_LSPO[i], sep = ""))
   
-  vip_MIR_PLS_LLO[[i]] <- vi_model(MIR_PLS_LLO) %>%
-    rename_with(.fn = function(x) paste(x,"MIR_PLS_LLO_model_", i)
+  vip_MIR_PLS_LSPO[[i]] <- vi_model(MIR_PLS_LSPO) %>%
+    rename_with(.fn = function(x) paste(x,"MIR_PLS_LSPO_model_", i)
     )
-  rm(MIR_PLS_LLO)
+  rm(MIR_PLS_LSPO)
 }
-vip_MIR_PLS_LLO <- bind_cols(vip_MIR_PLS_LLO)
-save(vip_MIR_PLS_LLO, file = "./04_modelsPredictions_vip/vip_MIR_PLS_LLO.RData")
-rm(vip_MIR_PLS_LLO)
+vip_MIR_PLS_LSPO <- bind_cols(vip_MIR_PLS_LSPO)
+save(vip_MIR_PLS_LSPO, file = "./04_modelsPredictions_vip/vip_MIR_PLS_LSPO.RData")
+rm(vip_MIR_PLS_LSPO)
 
-## PLS - VNIR - LLO:
-vip_VNIR_PLS_LLO <- list()
-list_VNIR_PLS_LLO <- list.files("./02_tuned_models/",
-                               pattern = "pls_VNIR_LLO_tuned_model")
+## PLS - VNIR - LSPO:
+vip_VNIR_PLS_LSPO <- list()
+list_VNIR_PLS_LSPO <- list.files("./02_tuned_models/",
+                               pattern = "pls_VNIR_LSPO_tuned_model")
 for (i in 1:100) {
   
-  load(paste("./02_tuned_models/",list_VNIR_PLS_LLO[i], sep = ""))
+  load(paste("./02_tuned_models/",list_VNIR_PLS_LSPO[i], sep = ""))
   
-  vip_VNIR_PLS_LLO[[i]] <- vi_model(VNIR_PLS_LLO) %>%
-    rename_with(.fn = function(x) paste(x,"VNIR_PLS_LLO_model_", i)
+  vip_VNIR_PLS_LSPO[[i]] <- vi_model(VNIR_PLS_LSPO) %>%
+    rename_with(.fn = function(x) paste(x,"VNIR_PLS_LSPO_model_", i)
     )
-  rm(VNIR_PLS_LLO)
+  rm(VNIR_PLS_LSPO)
 }
-vip_VNIR_PLS_LLO <- bind_cols(vip_VNIR_PLS_LLO)
-save(vip_VNIR_PLS_LLO, 
-     file = "./04_modelsPredictions_vip/vip_VNIR_PLS_LLO.RData")
-rm(vip_VNIR_PLS_LLO)
+vip_VNIR_PLS_LSPO <- bind_cols(vip_VNIR_PLS_LSPO)
+save(vip_VNIR_PLS_LSPO, 
+     file = "./04_modelsPredictions_vip/vip_VNIR_PLS_LSPO.RData")
+rm(vip_VNIR_PLS_LSPO)
 
 ## PLS - MIR - kFold:
 vip_MIR_PLS_kFold <- list()
@@ -749,41 +749,41 @@ save(vip_VNIR_PLS_kFold,
 rm(vip_VNIR_PLS_kFold)
 
 # Getting vip from LASSO-based models ---------------------------------------
-## LASSO - MIR - LLO:
-vip_MIR_LASSO_LLO <- list()
-list_MIR_LASSO_LLO <- list.files("./02_tuned_models/",
-                               pattern = "lasso_MIR_LLO_tuned_model")
+## LASSO - MIR - LSPO:
+vip_MIR_LASSO_LSPO <- list()
+list_MIR_LASSO_LSPO <- list.files("./02_tuned_models/",
+                               pattern = "lasso_MIR_LSPO_tuned_model")
 for (i in 1:100) {
   
-  load(paste("./02_tuned_models/",list_MIR_LASSO_LLO[i], sep = ""))
+  load(paste("./02_tuned_models/",list_MIR_LASSO_LSPO[i], sep = ""))
   
-  vip_MIR_LASSO_LLO[[i]] <- vi_model(MIR_LASSO_LLO) %>%
-    rename_with(.fn = function(x) paste(x,"MIR_LASSO_LLO_model_", i)
+  vip_MIR_LASSO_LSPO[[i]] <- vi_model(MIR_LASSO_LSPO) %>%
+    rename_with(.fn = function(x) paste(x,"MIR_LASSO_LSPO_model_", i)
     )
-  rm(MIR_LASSO_LLO)
+  rm(MIR_LASSO_LSPO)
 }
-vip_MIR_LASSO_LLO <- bind_cols(vip_MIR_LASSO_LLO)
-save(vip_MIR_LASSO_LLO,
-     file = "./04_modelsPredictions_vip/vip_MIR_LASSO_LLO.RData")
-rm(vip_MIR_LASSO_LLO)
+vip_MIR_LASSO_LSPO <- bind_cols(vip_MIR_LASSO_LSPO)
+save(vip_MIR_LASSO_LSPO,
+     file = "./04_modelsPredictions_vip/vip_MIR_LASSO_LSPO.RData")
+rm(vip_MIR_LASSO_LSPO)
 
-## LASSO - VNIR - LLO:
-vip_VNIR_LASSO_LLO <- list()
-list_VNIR_LASSO_LLO <- list.files("./02_tuned_models/",
-                                pattern = "lasso_VNIR_LLO_tuned_model")
+## LASSO - VNIR - LSPO:
+vip_VNIR_LASSO_LSPO <- list()
+list_VNIR_LASSO_LSPO <- list.files("./02_tuned_models/",
+                                pattern = "lasso_VNIR_LSPO_tuned_model")
 for (i in 1:100) {
   
-  load(paste("./02_tuned_models/",list_VNIR_LASSO_LLO[i], sep = ""))
+  load(paste("./02_tuned_models/",list_VNIR_LASSO_LSPO[i], sep = ""))
   
-  vip_VNIR_LASSO_LLO[[i]] <- vi_model(VNIR_LASSO_LLO) %>%
-    rename_with(.fn = function(x) paste(x,"VNIR_LASSO_LLO_model_", i)
+  vip_VNIR_LASSO_LSPO[[i]] <- vi_model(VNIR_LASSO_LSPO) %>%
+    rename_with(.fn = function(x) paste(x,"VNIR_LASSO_LSPO_model_", i)
     )
-  rm(VNIR_LASSO_LLO)
+  rm(VNIR_LASSO_LSPO)
 }
-vip_VNIR_LASSO_LLO <- bind_cols(vip_VNIR_LASSO_LLO)
-save(vip_VNIR_LASSO_LLO, 
-     file = "./04_modelsPredictions_vip/vip_VNIR_LASSO_LLO.RData")
-rm(vip_VNIR_LASSO_LLO)
+vip_VNIR_LASSO_LSPO <- bind_cols(vip_VNIR_LASSO_LSPO)
+save(vip_VNIR_LASSO_LSPO, 
+     file = "./04_modelsPredictions_vip/vip_VNIR_LASSO_LSPO.RData")
+rm(vip_VNIR_LASSO_LSPO)
 
 ## LASSO - MIR - kFold:
 vip_MIR_LASSO_kFold <- list()
