@@ -1,1 +1,15 @@
-# soil-carbon-and-spectroscopy-with-PLS-and-LASSO
+# Machine Learning modeling of the Soil Organic Carbon content (SOC):
+
+This repo contains all the code needed for reproducing the methodology proposed by dos Santos et al. (2023). If any code here are useful for you, please refeer to the paper:
+
+dos Santos, E. P., Moreira, M. C., Fernandes-Filho, E. I., Demattê, J. A. M., Santos, U. J. dos, da Silva, D. D., … Sampaio, E. V. de S. B. (2023). Improving the generalization error and transparency of regression models to estimate soil organic carbon using soil reflectance data. Ecological Informatics, 77. https://doi.org/10.1016/j.ecoinf.2023.102240
+
+## Paper abstract
+
+"Despite the success of using soil spectroscopy in studies to predict soil attributes, like soil organic carbon (SOC), recent work has revealed several limitations to this approach: a tendency for model overfitting and a lack of transparency of machine learning (ML) methods. Thus, we aimed to both test the ability to improve the generalizability of the models to predict SOC using a cross-validation (CV) strategy oriented to soil profiles and to test the gain in model interpretability by using the least absolute shrinkage and selection operator (LASSO) regression method instead of the commonly used partial least squares (PLS) method. We used one soil spectral library composed of 127 soil profiles (n = 701), from Northeast Brazil, containing reflectance data from the visible, near, and short-wave infrared (VNIR) and the mid-infrared (MIR) spectral regions. We tuned the ML models to predict SOC via two CV strategies: the standard k-fold CV and the leave-soil-profile-out (LSPO) CV. We found that LSPO CV can produce models with better generalizability, as they lose less accuracy than the ones trained with k-fold CV. We conclude that disregarding the autocorrelation of SOC within the soil profile can produce models that are prone to overfitting. In addition, LASSO used 105 covariables from VNIR and 190 from MIR for a total of 8604 and 13,336 covariables, respectively. Moreover, a few LASSO covariables correlated with SOC and are associated with both electronic transitions and vibrational bonds in organic compounds, so the possibility and ease of identifying spectral bands and their correlation with organic carbon indicate that the LASSO models presented more transparent models than the PLS models."
+
+## The figure from the paper summarize the code (scripts) in this repository:
+
+![image](https://github.com/eupassarinho/soil-carbon-and-spectroscopy-with-PLS-and-LASSO/assets/52005057/42b1336c-7786-4e0c-a709-9305c84bf951)
+
+Fig. 3 (from dos Santos et al. (2023)): the model fitting scheme for each spectral region, which includes subsampling of soil profiles to evaluate model training, testing, and performance. LASSO, least absolute shrinkage and selection operator; PLS, partial least squares; LSPO, leave-soil-profile-out cross-validation (CV); MIR, mid-infrared; VNIR, visible, near- and shortwave-infrared; ρ, original spectral reflectance; CR, the normalized reflectance; STD, the first derivative of ρ; and SCD, and the second derivative of ρ.
